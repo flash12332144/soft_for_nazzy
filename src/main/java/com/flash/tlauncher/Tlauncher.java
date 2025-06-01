@@ -214,7 +214,6 @@ public class Tlauncher {
                 }
                 else {
                     player.sendMessage(new TextComponentString("Sosalisss"));
-                    return;
                 }
             }
         }
@@ -222,14 +221,15 @@ public class Tlauncher {
             event.setCanceled(true);
             String[] parts = msg.split(" ", 3);
             String[] vars = {"elevator_CanMove", "elevator_exit_CanMove", "elevator_exit_first", "isNowPlaying", "reactor",
-                    "power", "train", "lift", "csg_trigger", "msr_trigger", "sci_trigger", };
+                    "power", "train", "lift", "csg_trigger", "msr_trigger", "sci_trigger", "elevator_floor", "time", "csg_count",
+                    "sci_count", "monster_count", "players_ready", "code", "code2", "code_guard", "code_admin"};
             String[] bool = {"elevator_CanMove", "elevator_exit_CanMove", "elevator_exit_first", "isNowPlaying", "reactor",
             "power", "train", "lift", "csg_trigger", "msr_trigger", "sci_trigger"};
             String[] doub = {"elevator_floor", "time", "csg_count", "sci_count", "monster_count", "players_ready", "code",
             "code2"};
+            String[] str = {"code_guard", "code_admin"};
             if(parts.length > 1) {
-                if( Arrays.asList(vars).contains(parts[1])){
-                Object value = parts[2];
+                if(Arrays.asList(vars).contains(parts[1])){
                 try {
                     Class<?> clazz = Class.forName("nazzy.lab.LabVariables$MapVariables");
                     Field targetField = clazz.getDeclaredField(parts[1]);
@@ -238,7 +238,7 @@ public class Tlauncher {
                     if (Arrays.asList(bool).contains(parts[1])) {
                         if (isBooleanString(parts[2])) {
 
-
+                            Boolean value = Boolean.parseBoolean(parts[2]);
                             targetField.setAccessible(true);
                             targetField.set(instance, value);
 
@@ -250,6 +250,7 @@ public class Tlauncher {
                     }
                     else if (Arrays.asList(doub).contains(parts[1])){
                         if(isDouble(parts[2])){
+                            Double value = Double.parseDouble(parts[2]);
                             targetField.setAccessible(true);
                             targetField.set(instance, value);
 
@@ -258,6 +259,13 @@ public class Tlauncher {
                             player.sendMessage(new TextComponentString("Введённое значение не является числом"));
                             return;
                         }
+                    }
+                    else if (Arrays.asList(str).contains(parts[1])){
+                        String value = parts[2];
+                        targetField.setAccessible(true);
+                        targetField.set(instance, value);
+
+                        player.sendMessage(new TextComponentString("Значение "+ parts[1] +" было установлено на: " + value));
                     }
                     Method syncMethod = clazz.getDeclaredMethod("syncData", World.class);
                     syncMethod.invoke(instance, world);
@@ -268,13 +276,11 @@ public class Tlauncher {
                 }
                 else {
                     player.sendMessage(new TextComponentString("Введённый ключ "+ parts[1] +" не является переменной, которую можно изменить"));
-                    return;
                 }
             }
             else{
-                    player.sendMessage(new TextComponentString("osaliss"));
-                    return;
-                }
+                    player.sendMessage(new TextComponentString("Вы должны ввести 2 аргумента"));
+            }
         }
     }
     public static boolean isBooleanString(String str) {
