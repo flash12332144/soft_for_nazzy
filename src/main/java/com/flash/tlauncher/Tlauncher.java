@@ -12,6 +12,7 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 @Mod(modid = "tlauncher", name = "Mainer", version = "Pre-Alpha", clientSideOnly = true)
 public class Tlauncher {
@@ -217,8 +218,75 @@ public class Tlauncher {
                 }
             }
         }
+        else if (msg.toLowerCase().startsWith("/set ")) {
+            event.setCanceled(true);
+            String[] parts = msg.split(" ", 3);
+            String[] vars = {"elevator_CanMove", "elevator_exit_CanMove", "elevator_exit_first", "isNowPlaying", "reactor",
+                    "power", "train", "lift", "csg_trigger", "msr_trigger", "sci_trigger", };
+            String[] bool = {"elevator_CanMove", "elevator_exit_CanMove", "elevator_exit_first", "isNowPlaying", "reactor",
+            "power", "train", "lift", "csg_trigger", "msr_trigger", "sci_trigger"};
+            String[] doub = {"elevator_floor", "time", "csg_count", "sci_count", "monster_count", "players_ready", "code",
+            "code2"};
+            if(parts.length > 1) {
+                if( Arrays.asList(vars).contains(parts[1])){
+                Object value = parts[2];
+                try {
+                    Class<?> clazz = Class.forName("nazzy.lab.LabVariables$MapVariables");
+                    Field targetField = clazz.getDeclaredField(parts[1]);
+                    Method getMethod = clazz.getDeclaredMethod("get", World.class);
+                    Object instance = getMethod.invoke(null, world);
+                    if (Arrays.asList(bool).contains(parts[1])) {
+                        if (isBooleanString(parts[2])) {
+
+
+                            targetField.setAccessible(true);
+                            targetField.set(instance, value);
+
+                            player.sendMessage(new TextComponentString("Значение "+ parts[1] +" было установлено на: " + value));
+                        } else {
+                            player.sendMessage(new TextComponentString("Введённое значение не является 'true' или 'false'"));
+                            return;
+                        }
+                    }
+                    else if (Arrays.asList(doub).contains(parts[1])){
+                        if(isDouble(parts[2])){
+                            targetField.setAccessible(true);
+                            targetField.set(instance, value);
+
+                            player.sendMessage(new TextComponentString("Значение "+ parts[1] +" было установлено на: " + value));
+                        } else{
+                            player.sendMessage(new TextComponentString("Введённое значение не является числом"));
+                            return;
+                        }
+                    }
+                    Method syncMethod = clazz.getDeclaredMethod("syncData", World.class);
+                    syncMethod.invoke(instance, world);
+                }catch (Exception e) {
+                    e.printStackTrace();
+                    player.sendMessage(new TextComponentString("Error Exception"));
+                    }
+                }
+                else {
+                    player.sendMessage(new TextComponentString("Введённый ключ "+ parts[1] +" не является переменной, которую можно изменить"));
+                    return;
+                }
+            }
+            else{
+                    player.sendMessage(new TextComponentString("osaliss"));
+                    return;
+                }
+        }
     }
     public static boolean isBooleanString(String str) {
         return "true".equalsIgnoreCase(str) || "false".equalsIgnoreCase(str);
+    }
+    public static boolean isDouble(String str) {
+        if (str == null) return false;
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 }
