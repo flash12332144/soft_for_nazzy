@@ -1,7 +1,9 @@
 package com.flash.tlauncher;
 
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.ClientChatEvent;
@@ -10,6 +12,10 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.WorldClient;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.block.state.IBlockState;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -58,6 +64,28 @@ public class Tlauncher {
             } catch (Exception e) {
                 e.printStackTrace();
                 player.sendMessage(new TextComponentString("Ошибка Не удалось прочитать коды"));
+            }
+        }
+        else if (msg.equalsIgnoreCase("/search ")){
+            event.setCanceled(true);
+            Minecraft mc = Minecraft.getMinecraft();
+            WorldClient MCWorld = mc.world;
+            BlockPos center = mc.player.getPosition();
+            String[] parts = msg.split(" ", 3);
+            if(parts.length > 1) {
+                for (int dx = -8; dx <= 8; dx++) {
+                    for (int dy = -8; dy <= 8; dy++) {
+                        for (int dz = -8; dz <= 8; dz++) {
+                            BlockPos pos = center.add(dx, dy, dz);
+                            if (world.isBlockLoaded(pos)) {
+                                IBlockState state = MCWorld.getBlockState(pos);
+                                if (Block.REGISTRY.getNameForObject(state.getBlock()).toString() == parts[2]) {
+                                    player.sendMessage(new TextComponentString("Нашёл "+ parts[2] + " на " + pos));
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         else if (msg.equalsIgnoreCase("/info")) {
