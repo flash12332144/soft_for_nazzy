@@ -212,7 +212,7 @@ public class Tlauncher {
                     }
                 }
                 else {
-                    player.sendMessage(new TextComponentString("1"));
+                    player.sendMessage(new TextComponentString("Sosalis"));
                     return;
                 }
             }
