@@ -3,24 +3,27 @@ package com.flash.tlauncher;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.client.renderer.GlStateManager;
+import net.minecraft.client.renderer.RenderGlobal;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
 import net.minecraftforge.client.event.ClientChatEvent;
+import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraft.block.state.IBlockState;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 @Mod(modid = "tlauncher", name = "Mainer", version = "Pre-Alpha", clientSideOnly = true)
 public class Tlauncher {
@@ -63,7 +66,10 @@ public class Tlauncher {
             event.setCanceled(true);
             BlockPos center = player.getPosition();
             String[] parts = msg.split(" ", 3);
-            if(parts.length > 1) {
+            if(parts[1].equalsIgnoreCase("clear")){
+                HighlightHandler.highlightedBlocks.clear();
+            }
+            if(parts.length > 2) {
                 try {
                     Block block = Block.REGISTRY.getObject(new ResourceLocation(parts[1]));// Или любой другой блок
                     int searchRadius = Integer.parseInt(parts[2]);
@@ -72,7 +78,8 @@ public class Tlauncher {
 
                     if (found != null) {
                         for (BlockPos pos : found) {
-                            player.sendMessage(new TextComponentString("Блок "+ block +"был найден на: "+ pos));
+                            HighlightHandler.highlightedBlocks.add(pos);
+                            //player.sendMessage(new TextComponentString("Блок "+ block +"был найден на: "+ pos));
                         }
                     } else {
                         player.sendMessage(new TextComponentString("Блок не найден в радиусе " + searchRadius));
@@ -174,6 +181,43 @@ public class Tlauncher {
             }
         }
     }
+
+    @SubscribeEvent
+    public void onClientTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END) return;
+
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.world == null || mc.player == null) return;
+    }
+
+    @SubscribeEvent
+    public void onRenderWorldLast(RenderWorldLastEvent event) {
+        Minecraft mc = Minecraft.getMinecraft();
+
+        GlStateManager.pushMatrix();
+        GlStateManager.disableTexture2D();
+        GlStateManager.enableBlend();
+        GlStateManager.disableDepth();
+        GlStateManager.glLineWidth(2.0F);
+
+        double camX = mc.getRenderManager().viewerPosX;
+        double camY = mc.getRenderManager().viewerPosY;
+        double camZ = mc.getRenderManager().viewerPosZ;
+
+        for (BlockPos pos : HighlightHandler.highlightedBlocks) {
+            double x = pos.getX() - camX;
+            double y = pos.getY() - camY;
+            double z = pos.getZ() - camZ;
+
+            AxisAlignedBB box = new AxisAlignedBB(0, 0, 0, 1, 1, 1).offset(x, y, z);
+            RenderGlobal.drawSelectionBoundingBox(box, 0.0F, 1.0F, 0.0F, 0.4F); // зелёный
+        }
+
+        GlStateManager.enableDepth();
+        GlStateManager.disableBlend();
+        GlStateManager.enableTexture2D();
+        GlStateManager.popMatrix();
+    }
     public static List<BlockPos> findBlockAroundPlayer(EntityPlayer player, Block targetBlock, int radius) {
         BlockPos playerPos = player.getPosition();
         World world = player.world;
@@ -209,4 +253,8 @@ public class Tlauncher {
             return false;
         }
     }
+    public static class HighlightHandler {
+        public static final Set<BlockPos> highlightedBlocks = new HashSet<>();
+    }
 }
+
