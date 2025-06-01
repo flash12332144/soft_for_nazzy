@@ -165,7 +165,5 @@ public class Tlauncher {
                 player.sendMessage(new TextComponentString("Ошибка Не удалось изменить код"));
             }
         }
-
-
     }
 }
