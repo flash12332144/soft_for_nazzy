@@ -167,7 +167,7 @@ public class Tlauncher {
                     syncMethod.invoke(instance, world);
                 }catch (Exception e) {
                     e.printStackTrace();
-                    player.sendMessage(new TextComponentString("Error Exception"));
+                    player.sendMessage(new TextComponentString("Error Exceptions"));
                     }
                 }
                 else {
