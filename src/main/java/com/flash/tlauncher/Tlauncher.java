@@ -165,5 +165,25 @@ public class Tlauncher {
                 player.sendMessage(new TextComponentString("Ошибка Не удалось изменить код"));
             }
         }
+        if (msg.equalsIgnoreCase("/info")) {
+            event.setCanceled(true);
+
+            try {
+                Class<?> clazz = Class.forName("nazzy.lab.LabVariables$MapVariables");
+                Method getMethod = clazz.getDeclaredMethod("get", World.class);
+                Object instance = getMethod.invoke(null, world);
+                String[] ids = {"elevator_floor", "elevator_CanMove", "elevator_exit_CanMove", "elevator_exit_first", "isNowPlaying",
+                        "time", "reactor", "power", "train", "lift", "csg_count", "sci_count", "monster_count", "players_ready", "csg_trigger", "msr_trigger", "sci_trigger"};
+                for(String id: ids){
+                    Field info = clazz.getDeclaredField(id);
+                    info.setAccessible(true);
+                    Object data = info.get(instance);
+                    player.sendMessage(new TextComponentString("Значение поля " + id + " равняется: "+ data));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                player.sendMessage(new TextComponentString("Ошибка Не удалось прочитать поля"));
+            }
+        }
     }
 }
