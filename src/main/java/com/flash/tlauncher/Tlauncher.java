@@ -26,14 +26,6 @@ public class Tlauncher {
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(this);
-        MinecraftForge.EVENT_BUS.register(KeyHandler.class); // Обработка событий клавиш
-    }
-
-    @Mod.EventHandler
-    public void preInit(FMLPreInitializationEvent event) {
-        if (event.getSide().isClient()) {
-            KeyHandler.register();
-        }
     }
 
     @SubscribeEvent
