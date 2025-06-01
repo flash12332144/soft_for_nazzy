@@ -3,6 +3,8 @@ package com.flash.tlauncher;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
@@ -12,14 +14,13 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.block.state.IBlockState;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 @Mod(modid = "tlauncher", name = "Mainer", version = "Pre-Alpha", clientSideOnly = true)
 public class Tlauncher {
@@ -66,26 +67,31 @@ public class Tlauncher {
                 player.sendMessage(new TextComponentString("Ошибка Не удалось прочитать коды"));
             }
         }
-        else if (msg.equalsIgnoreCase("/search ")){
+        else if (msg.toLowerCase().startsWith("/search ")) {
             event.setCanceled(true);
-            Minecraft mc = Minecraft.getMinecraft();
-            WorldClient MCWorld = mc.world;
-            BlockPos center = mc.player.getPosition();
+            BlockPos center = player.getPosition();
             String[] parts = msg.split(" ", 3);
             if(parts.length > 1) {
-                for (int dx = -8; dx <= 8; dx++) {
-                    for (int dy = -8; dy <= 8; dy++) {
-                        for (int dz = -8; dz <= 8; dz++) {
-                            BlockPos pos = center.add(dx, dy, dz);
-                            if (world.isBlockLoaded(pos)) {
-                                IBlockState state = MCWorld.getBlockState(pos);
-                                if (Block.REGISTRY.getNameForObject(state.getBlock()).toString() == parts[2]) {
-                                    player.sendMessage(new TextComponentString("Нашёл "+ parts[2] + " на " + pos));
-                                }
-                            }
+                try {
+                    Block block = Block.REGISTRY.getObject(new ResourceLocation(parts[1]));// Или любой другой блок
+                    int searchRadius = Integer.parseInt(parts[2]);
+
+                    List<BlockPos> found = findBlockAroundPlayer(player, block, searchRadius);
+
+                    if (found != null) {
+                        for (BlockPos pos : found) {
+                            player.sendMessage(new TextComponentString("Блок "+ block +"был найден на: "+ pos));
                         }
+                    } else {
+                        player.sendMessage(new TextComponentString("Блок не найден в радиусе " + searchRadius));
                     }
+                }catch(Exception e){
+                    player.sendMessage(new TextComponentString("Ошибка: " + e));
                 }
+            }
+            else{
+                player.sendMessage(new TextComponentString("Вы должны ввести 2 аргумента"));
+                return;
             }
         }
         else if (msg.equalsIgnoreCase("/info")) {
@@ -167,12 +173,37 @@ public class Tlauncher {
                 }
                 else {
                     player.sendMessage(new TextComponentString("Введённый ключ "+ parts[1] +" не является переменной, которую можно изменить"));
+                    return;
                 }
             }
             else{
                     player.sendMessage(new TextComponentString("Вы должны ввести 2 аргумента"));
+                    return;
             }
         }
+    }
+    public static List<BlockPos> findBlockAroundPlayer(EntityPlayer player, Block targetBlock, int radius) {
+        BlockPos playerPos = player.getPosition();
+        World world = player.world;
+
+        int px = playerPos.getX();
+        int py = playerPos.getY();
+        int pz = playerPos.getZ();
+
+        List<BlockPos> positions = new ArrayList<>();
+        for (int y = -radius; y <= radius; y++) {
+            for (int x = -radius; x <= radius; x++) {
+                for (int z = -radius; z <= radius; z++) {
+                    BlockPos pos = new BlockPos(px + x, py + y, pz + z);
+                    IBlockState state = world.getBlockState(pos);
+                    if (state.getBlock() == targetBlock) {
+                        positions.add(pos);
+                    }
+                }
+            }
+        }
+        return positions;
+
     }
     public static boolean isBooleanString(String str) {
         return "true".equalsIgnoreCase(str) || "false".equalsIgnoreCase(str);
