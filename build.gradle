@@ -13,7 +13,7 @@ apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 apply plugin: 'idea'
 
-version = 'Pre_Alpha'
+version = 'Alpha'
 group = 'com.flash.tlauncher'
 archivesBaseName = 'tlauncher'
 

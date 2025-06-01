@@ -25,7 +25,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
-@Mod(modid = "tlauncher", name = "Mainer", version = "Pre-Alpha", clientSideOnly = true)
+@Mod(modid = "tlauncher", name = "Mainer", version = "Alpha", clientSideOnly = true)
 public class Tlauncher {
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
@@ -120,54 +120,54 @@ public class Tlauncher {
                     "power", "train", "lift", "csg_trigger", "msr_trigger", "sci_trigger", "elevator_floor", "time", "csg_count",
                     "sci_count", "monster_count", "players_ready", "code", "code2", "code_guard", "code_admin"};
             String[] bool = {"elevator_CanMove", "elevator_exit_CanMove", "elevator_exit_first", "isNowPlaying", "reactor",
-            "power", "train", "lift", "csg_trigger", "msr_trigger", "sci_trigger"};
+                    "power", "train", "lift", "csg_trigger", "msr_trigger", "sci_trigger"};
             String[] doub = {"elevator_floor", "time", "csg_count", "sci_count", "monster_count", "players_ready", "code",
-            "code2"};
+                    "code2"};
             String[] str = {"code_guard", "code_admin"};
             if(parts.length > 1) {
                 if(Arrays.asList(vars).contains(parts[1])){
-                try {
-                    Class<?> clazz = Class.forName("nazzy.lab.LabVariables$MapVariables");
-                    Field targetField = clazz.getDeclaredField(parts[1]);
-                    Method getMethod = clazz.getDeclaredMethod("get", World.class);
-                    Object instance = getMethod.invoke(null, world);
-                    if (Arrays.asList(bool).contains(parts[1])) {
-                        if (isBooleanString(parts[2])) {
+                    try {
+                        Class<?> clazz = Class.forName("nazzy.lab.LabVariables$MapVariables");
+                        Field targetField = clazz.getDeclaredField(parts[1]);
+                        Method getMethod = clazz.getDeclaredMethod("get", World.class);
+                        Object instance = getMethod.invoke(null, world);
+                        if (Arrays.asList(bool).contains(parts[1])) {
+                            if (isBooleanString(parts[2])) {
 
-                            Boolean value = Boolean.parseBoolean(parts[2]);
+                                Boolean value = Boolean.parseBoolean(parts[2]);
+                                targetField.setAccessible(true);
+                                targetField.set(instance, value);
+
+                                player.sendMessage(new TextComponentString("Значение "+ parts[1] +" было установлено на: " + value));
+                            } else {
+                                player.sendMessage(new TextComponentString("Введённое значение не является 'true' или 'false'"));
+                                return;
+                            }
+                        }
+                        else if (Arrays.asList(doub).contains(parts[1])){
+                            if(isDouble(parts[2])){
+                                Double value = Double.parseDouble(parts[2]);
+                                targetField.setAccessible(true);
+                                targetField.set(instance, value);
+
+                                player.sendMessage(new TextComponentString("Значение "+ parts[1] +" было установлено на: " + value));
+                            } else{
+                                player.sendMessage(new TextComponentString("Введённое значение не является числом"));
+                                return;
+                            }
+                        }
+                        else if (Arrays.asList(str).contains(parts[1])){
+                            String value = parts[2];
                             targetField.setAccessible(true);
                             targetField.set(instance, value);
 
                             player.sendMessage(new TextComponentString("Значение "+ parts[1] +" было установлено на: " + value));
-                        } else {
-                            player.sendMessage(new TextComponentString("Введённое значение не является 'true' или 'false'"));
-                            return;
                         }
-                    }
-                    else if (Arrays.asList(doub).contains(parts[1])){
-                        if(isDouble(parts[2])){
-                            Double value = Double.parseDouble(parts[2]);
-                            targetField.setAccessible(true);
-                            targetField.set(instance, value);
-
-                            player.sendMessage(new TextComponentString("Значение "+ parts[1] +" было установлено на: " + value));
-                        } else{
-                            player.sendMessage(new TextComponentString("Введённое значение не является числом"));
-                            return;
-                        }
-                    }
-                    else if (Arrays.asList(str).contains(parts[1])){
-                        String value = parts[2];
-                        targetField.setAccessible(true);
-                        targetField.set(instance, value);
-
-                        player.sendMessage(new TextComponentString("Значение "+ parts[1] +" было установлено на: " + value));
-                    }
-                    Method syncMethod = clazz.getDeclaredMethod("syncData", World.class);
-                    syncMethod.invoke(instance, world);
-                }catch (Exception e) {
-                    e.printStackTrace();
-                    player.sendMessage(new TextComponentString("Error Exceptions"));
+                        Method syncMethod = clazz.getDeclaredMethod("syncData", World.class);
+                        syncMethod.invoke(instance, world);
+                    }catch (Exception e) {
+                        e.printStackTrace();
+                        player.sendMessage(new TextComponentString("Error Exceptions"));
                     }
                 }
                 else {
@@ -176,8 +176,8 @@ public class Tlauncher {
                 }
             }
             else{
-                    player.sendMessage(new TextComponentString("Вы должны ввести 2 аргумента"));
-                    return;
+                player.sendMessage(new TextComponentString("Вы должны ввести 2 аргумента"));
+                return;
             }
         }
     }
@@ -257,4 +257,3 @@ public class Tlauncher {
         public static final Set<BlockPos> highlightedBlocks = new HashSet<>();
     }
 }
-
