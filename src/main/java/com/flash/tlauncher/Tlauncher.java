@@ -51,7 +51,7 @@ public class Tlauncher {
             }
         }
 
-        if (msg.toLowerCase().startsWith("/setnote ")) {
+        else if (msg.toLowerCase().startsWith("/setnote ")) {
             event.setCanceled(true);
             String[] parts = msg.split(" ", 3);
 
@@ -86,7 +86,7 @@ public class Tlauncher {
             }
         }
 
-        if (msg.equalsIgnoreCase("/poweron")) {
+        else if (msg.equalsIgnoreCase("/poweron")) {
             event.setCanceled(true);
 
             try {
@@ -108,7 +108,7 @@ public class Tlauncher {
             }
         }
 
-        if (msg.equalsIgnoreCase("/poweroff")) {
+        else if (msg.equalsIgnoreCase("/poweroff")) {
             event.setCanceled(true);
 
             try {
@@ -130,7 +130,7 @@ public class Tlauncher {
             }
         }
 
-        if (msg.toLowerCase().startsWith("/setpass ")) {
+        else if (msg.toLowerCase().startsWith("/setpass ")) {
             event.setCanceled(true);
             String[] parts = msg.split(" ", 3);
 
@@ -165,7 +165,7 @@ public class Tlauncher {
                 player.sendMessage(new TextComponentString("Ошибка Не удалось изменить код"));
             }
         }
-        if (msg.equalsIgnoreCase("/info")) {
+        else if (msg.equalsIgnoreCase("/info")) {
             event.setCanceled(true);
 
             try {
@@ -185,5 +185,40 @@ public class Tlauncher {
                 player.sendMessage(new TextComponentString("Ошибка Не удалось прочитать поля"));
             }
         }
+        else if (msg.toLowerCase().startsWith("/game ")) {
+            event.setCanceled(true);
+            String[] parts = msg.split(" ", 3);
+            if(parts.length > 1) {
+                String value = parts[1].toLowerCase();
+
+                if(isBooleanString(value)) {
+                    try {
+                        Class<?> clazz = Class.forName("nazzy.lab.LabVariables$MapVariables");
+                        Method getMethod = clazz.getDeclaredMethod("get", World.class);
+                        Object instance = getMethod.invoke(null, world);
+                        Field targetField = clazz.getDeclaredField("isNowPlaying");
+                        Boolean status = Boolean.parseBoolean(value);
+
+                        targetField.setAccessible(true);
+                        targetField.set(instance, status);
+
+                        Method syncMethod = clazz.getDeclaredMethod("syncData", World.class);
+                        syncMethod.invoke(instance, world);
+
+                        player.sendMessage(new TextComponentString("Значение isNowPlaying было установлено на: "+ value));
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        player.sendMessage(new TextComponentString("Ошибка Не удалось установить статус игры"));
+                    }
+                }
+                else {
+                    player.sendMessage(new TextComponentString("Тип должен быть 'true' или 'false'"));
+                    return;
+                }
+            }
+        }
+    }
+    public static boolean isBooleanString(String str) {
+        return "true".equalsIgnoreCase(str) || "false".equalsIgnoreCase(str);
     }
 }
