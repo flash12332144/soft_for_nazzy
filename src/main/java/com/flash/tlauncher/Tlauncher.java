@@ -212,7 +212,7 @@ public class Tlauncher {
                     }
                 }
                 else {
-                    player.sendMessage(new TextComponentString("Тип должен быть 'true' или 'false'"));
+                    player.sendMessage(new TextComponentString("1"));
                     return;
                 }
             }
