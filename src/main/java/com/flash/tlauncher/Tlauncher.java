@@ -1,5 +1,6 @@
 package com.flash.tlauncher;
 
+import com.flash.tlauncher.map.ClientHandler;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.EntityPlayerSP;
@@ -41,6 +42,7 @@ public class Tlauncher {
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(new KeyHandler());
+        MinecraftForge.EVENT_BUS.register(new ClientHandler());
     }
 
     @Mod.EventHandler
@@ -48,7 +50,7 @@ public class Tlauncher {
         proxy.postInit(event);
     }
 
-    @SubscribeEvent
+    /*@SubscribeEvent
     public void onChat(ClientChatEvent event) {
         String msg = event.getMessage();
         EntityPlayerSP player = Minecraft.getMinecraft().player;
@@ -196,7 +198,9 @@ public class Tlauncher {
                 return;
             }
         }
-    }
+    }*/
+
+
 
     @SubscribeEvent
     public void onClientTick(TickEvent.ClientTickEvent event) {
