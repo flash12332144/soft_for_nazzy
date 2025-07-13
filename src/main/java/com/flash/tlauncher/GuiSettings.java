@@ -1,52 +1,72 @@
 package com.flash.tlauncher;
 
 import net.minecraft.client.gui.GuiScreen;
-
-import java.awt.*;
+import java.io.IOException;
 
 public class GuiSettings extends GuiScreen {
-    private static final int OPTION_X = 20;
-    private static final int OPTION_Y_START = 20;
-    private static final int OPTION_SPACING = 30;
-    private static final int OPTION_WIDTH = 200;
-    private static final int OPTION_HEIGHT = 20;
 
-    @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
-        if (inBox(mouseX, mouseY, OPTION_Y_START)) {
-            GuiClickMenu.tabColorIndex = (GuiClickMenu.tabColorIndex + 1) % GuiClickMenu.PRESET_COLORS.length;
-            GuiClickMenu.tabColor = GuiClickMenu.PRESET_COLORS[GuiClickMenu.tabColorIndex];
-        } else if (inBox(mouseX, mouseY, OPTION_Y_START + OPTION_SPACING)) {
-            GuiClickMenu.moduleColorIndex = (GuiClickMenu.moduleColorIndex + 1) % GuiClickMenu.PRESET_COLORS.length;
-            GuiClickMenu.moduleColor = GuiClickMenu.PRESET_COLORS[GuiClickMenu.moduleColorIndex];
-        } else if (inBox(mouseX, mouseY, OPTION_Y_START + 2 * OPTION_SPACING)) {
-            GuiClickMenu.textColorIndex = (GuiClickMenu.textColorIndex + 1) % GuiClickMenu.PRESET_COLORS.length;
-            GuiClickMenu.textColor = GuiClickMenu.PRESET_COLORS[GuiClickMenu.textColorIndex];
-        }
-    }
-
-    private boolean inBox(int mouseX, int mouseY, int y) {
-        return mouseX >= OPTION_X && mouseX <= OPTION_X + OPTION_WIDTH &&
-                mouseY >= y && mouseY <= y + OPTION_HEIGHT;
-    }
+    private int langButtonX, langButtonY;
+    private int backButtonX, backButtonY;
+    private final int buttonWidth = 120;
+    private final int buttonHeight = 15;
 
     @Override
     public void drawScreen(int mouseX, int mouseY, float partialTicks) {
         drawDefaultBackground();
-        int y = OPTION_Y_START;
 
-        drawString(fontRenderer, "Tab Color", OPTION_X, y, Color.WHITE.getRGB());
-        drawRect(OPTION_X + 100, y, OPTION_X + 120, y + OPTION_HEIGHT, GuiClickMenu.tabColor);
-        y += OPTION_SPACING;
+        String title = GuiClickMenu.currentLanguage.equals("ru") ? "Настройки" : "Settings";
+        drawCenteredString(fontRenderer, title, width / 2, 10, 0xFFFFFF);
 
-        drawString(fontRenderer, "Module Color", OPTION_X, y, Color.WHITE.getRGB());
-        drawRect(OPTION_X + 100, y, OPTION_X + 120, y + OPTION_HEIGHT, GuiClickMenu.moduleColor);
-        y += OPTION_SPACING;
+        langButtonX = width / 2 - buttonWidth / 2;
+        langButtonY = 40;
 
-        drawString(fontRenderer, "Text Color", OPTION_X, y, Color.WHITE.getRGB());
-        drawRect(OPTION_X + 100, y, OPTION_X + 120, y + OPTION_HEIGHT, GuiClickMenu.textColor);
-        y += OPTION_SPACING;
+        backButtonX = langButtonX;
+        backButtonY = langButtonY + buttonHeight + 10;
 
-        drawString(fontRenderer, "Click to cycle through neon presets", OPTION_X, y, Color.GRAY.getRGB());
+        // Кнопка смены языка
+        drawRect(langButtonX, langButtonY, langButtonX + buttonWidth, langButtonY + buttonHeight, GuiClickMenu.buttonColor);
+        drawCenteredString(fontRenderer, getLangButtonText(), langButtonX + buttonWidth / 2, langButtonY + 4, 0xFFFFFF);
+
+        // Кнопка Назад
+        drawRect(backButtonX, backButtonY, backButtonX + buttonWidth, backButtonY + buttonHeight, GuiClickMenu.buttonColor);
+        drawCenteredString(fontRenderer, GuiClickMenu.currentLanguage.equals("ru") ? "Назад" : "Back", backButtonX + buttonWidth / 2, backButtonY + 4, 0xFFFFFF);
+    }
+
+    @Override
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+        // Смена языка
+        if (isInside(mouseX, mouseY, langButtonX, langButtonY, buttonWidth, buttonHeight)) {
+            GuiClickMenu.currentLanguage = GuiClickMenu.currentLanguage.equals("en") ? "ru" : "en";
+        }
+
+        // Назад
+        if (isInside(mouseX, mouseY, backButtonX, backButtonY, buttonWidth, buttonHeight)) {
+            mc.displayGuiScreen(new GuiClickMenu());
+        }
+
+        super.mouseClicked(mouseX, mouseY, mouseButton);
+    }
+
+    @Override
+    protected void keyTyped(char typedChar, int keyCode) throws IOException {
+        if (keyCode == 1) { // ESC
+            mc.displayGuiScreen(new GuiClickMenu());
+        } else {
+            super.keyTyped(typedChar, keyCode);
+        }
+    }
+
+    private boolean isInside(int mouseX, int mouseY, int x, int y, int w, int h) {
+        return mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h;
+    }
+
+    private String getLangButtonText() {
+        return (GuiClickMenu.currentLanguage.equals("ru") ? "Язык: " : "Language: ") +
+                GuiClickMenu.currentLanguage.toUpperCase();
+    }
+
+    @Override
+    public boolean doesGuiPauseGame() {
+        return false;
     }
 }
