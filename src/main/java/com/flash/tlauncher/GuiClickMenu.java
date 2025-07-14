@@ -1,142 +1,215 @@
 package com.flash.tlauncher;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class GuiClickMenu extends GuiScreen {
-
     private static final List<Tab> tabs = new ArrayList<>();
     private static int selectedTab = 0;
 
-    public static int buttonColor = 0xFF303030; // <-- Настраиваемый цвет
-    public static String currentLanguage = "en"; // <-- Выбранный язык (en / ru)
+    public static int buttonColor = 0xFF303030;
+    public static String currentLanguage = "en";
 
-    private static final int tabWidth = 60, tabHeight = 15;
+    private static final int tabWidth = 60;
+    private static final int tabHeight = 15;
+    private static final int titleBarHeight = 20;
 
-    // Переводы
+    private final int windowWidth = 260;
+    private final int windowHeight = 180;
+
+    private int windowX;
+    private int windowY;
+
+    private boolean dragging = false;
+    private int dragOffsetX;
+    private int dragOffsetY;
+
+    private static final File CONFIG_FILE = new File(Minecraft.getMinecraft().mcDataDir, "clickmenu_position.json");
+
     private static final Map<String, Map<String, String>> translations = new HashMap<>();
-
     static {
         Map<String, String> en = new HashMap<>();
-        en.put("Combat", "Combat");
-        en.put("Combat2", "Combat 2");
-        en.put("Render", "Render");
+        en.put("Lab", "Laboratory");
+        en.put("light", "Light");
         en.put("Settings", "Settings");
-        en.put("Aim", "Aim");
-        en.put("KillAura", "KillAura");
-        en.put("AimAssist", "Aim Assist");
-        en.put("KillAuraPlus", "KillAura+");
-        en.put("ESP", "ESP");
-        en.put("Fullbright", "Fullbright");
-        en.put("Electrik", "Electrik");
+        en.put("Language", "Language: ");
 
         Map<String, String> ru = new HashMap<>();
-        ru.put("Combat", "Бой");
-        ru.put("Combat2", "Бой 2");
-        ru.put("Render", "Визуал");
+        ru.put("Lab", "Лаборатория");
+        ru.put("light", "Свет");
         ru.put("Settings", "Настройки");
-        ru.put("Aim", "Прицел");
-        ru.put("KillAura", "Аура");
-        ru.put("AimAssist", "Помощь прицела");
-        ru.put("KillAuraPlus", "Улучш. аура");
-        ru.put("ESP", "ESP");
-        ru.put("Fullbright", "Яркость");
-        ru.put("Electrik", "Электрик");
+        ru.put("Language", "Язык: ");
 
         translations.put("en", en);
         translations.put("ru", ru);
 
-        // Создание вкладок
-        Tab combat = new Tab("Combat");
-        combat.modules.add(new Module("Aim", true));
-        combat.modules.add(new Module("KillAura", true));
+        Tab lab = new Tab("Lab");
+        lab.modules.add(new Module("light", true));
+        lab.modules.add(new Module("Elevator A", false));
 
-        Tab combat2 = new Tab("Combat2");
-        combat2.modules.add(new Module("AimAssist", true));
-        combat2.modules.add(new Module("KillAuraPlus", true));
-
-        Tab render = new Tab("Render");
-        render.modules.add(new Module("ESP", true));
-        render.modules.add(new Module("Fullbright", true));
-        render.modules.add(new Module("Electrik", false));
-
+        Tab ob = new Tab("Ob");
         Tab settings = new Tab("Settings");
 
-        tabs.add(combat);
-        tabs.add(combat2);
-        tabs.add(render);
+        tabs.add(lab);
+        tabs.add(ob);
         tabs.add(settings);
     }
 
-    public static String tr(String key) {
+    private static String tr(String key) {
         return translations.getOrDefault(currentLanguage, translations.get("en")).getOrDefault(key, key);
     }
 
     @Override
-    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
-        drawDefaultBackground();
-
-        int x = 10, y = 10;
-        for (int i = 0; i < tabs.size(); i++) {
-            Tab tab = tabs.get(i);
-            drawRect(x, y, x + tabWidth, y + tabHeight, 0xFF202020);
-            drawCenteredString(fontRenderer, tr(tab.name), x + tabWidth / 2, y + 4,
-                    (i == selectedTab) ? 0xFFFFFF : 0xAAAAAA);
-            y += tabHeight + 2;
-        }
-
-        if (selectedTab < tabs.size()) {
-            Tab current = tabs.get(selectedTab);
-            if (!"Settings".equals(current.name)) {
-                y = 10;
-                x = 80;
-                for (Module mod : current.modules) {
-                    drawRect(x, y, x + 100, y + 15, buttonColor);
-                    int textColor = mod.toggleable
-                            ? (mod.enabled ? 0x00FF00 : 0xFF5555)
-                            : 0xFFFFFF;
-                    drawString(fontRenderer, tr(mod.name), x + 5, y + 4, textColor);
-                    y += 18;
-                }
-            }
+    public void initGui() {
+        super.initGui();
+        if (!loadPosition()) {
+            windowX = (width - windowWidth) / 2;
+            windowY = (height - windowHeight) / 2;
         }
     }
 
     @Override
-    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
-        int x = 10, y = 10;
-        for (int i = 0; i < tabs.size(); i++) {
-            if (mouseX >= x && mouseX <= x + tabWidth &&
-                    mouseY >= y && mouseY <= y + tabHeight) {
+    public void onGuiClosed() {
+        savePosition();
+        super.onGuiClosed();
+    }
 
-                Tab tab = tabs.get(i);
-                if ("Settings".equals(tab.name)) {
-                    mc.displayGuiScreen(new GuiSettings());
-                } else {
-                    selectedTab = i;
-                }
-                return;
-            }
-            y += tabHeight + 2;
+    @Override
+    public void drawScreen(int mouseX, int mouseY, float partialTicks) {
+        if (dragging) {
+            windowX = mouseX - dragOffsetX;
+            windowY = mouseY - dragOffsetY;
+        }
+
+        drawRect(windowX, windowY, windowX + windowWidth, windowY + windowHeight, 0xCC101010);
+        drawRect(windowX, windowY, windowX + windowWidth, windowY + 1, 0xFFFFFFFF);
+        drawRect(windowX, windowY + windowHeight - 1, windowX + windowWidth, windowY + windowHeight, 0xFFFFFFFF);
+        drawRect(windowX, windowY, windowX + 1, windowY + windowHeight, 0xFFFFFFFF);
+        drawRect(windowX + windowWidth - 1, windowY, windowX + windowWidth, windowY + windowHeight, 0xFFFFFFFF);
+
+        drawRect(windowX, windowY, windowX + windowWidth, windowY + titleBarHeight, 0xAA303030);
+        drawCenteredString(fontRenderer, tr(tabs.get(selectedTab).name), windowX + windowWidth / 2, windowY + 6, 0xFFFFFF);
+
+        int tx = windowX + 5;
+        int ty = windowY + titleBarHeight + 5;
+        for (int i = 0; i < tabs.size(); i++) {
+            Tab tab = tabs.get(i);
+            int color = (i == selectedTab) ? 0xFF505050 : 0xFF303030;
+            drawRect(tx, ty, tx + tabWidth, ty + tabHeight, color);
+            drawCenteredString(fontRenderer, tr(tab.name), tx + tabWidth / 2, ty + 4, 0xFFFFFF);
+            ty += tabHeight + 2;
         }
 
         if (selectedTab < tabs.size()) {
             Tab current = tabs.get(selectedTab);
-            if ("Settings".equals(current.name)) return;
+            if ("Settings".equals(current.name)) {
+                int margin = 20;
+                int bx = windowX + margin;
+                int bw = windowWidth - 2 * margin;
+                int bh = 20;
+                int by = windowY + titleBarHeight + 40;
 
-            y = 10;
-            x = 80;
+                drawRect(bx, by, bx + bw, by + bh, buttonColor);
+                drawCenteredString(fontRenderer, tr("Language") + currentLanguage.toUpperCase(), bx + bw / 2, by + 6, 0xFFFFFF);
+            } else {
+                ty = windowY + titleBarHeight + 5;
+                int mx = windowX + 80;
+                for (Module mod : current.modules) {
+                    drawRect(mx, ty, mx + 120, ty + 20, buttonColor);
+                    int textColor = mod.toggleable ? (mod.enabled ? 0x00FF00 : 0xFF5555) : 0xFFFFFF;
+                    drawString(fontRenderer, tr(mod.name), mx + 5, ty + 6, textColor);
+                    ty += 22;
+                }
+            }
+        }
+
+        super.drawScreen(mouseX, mouseY, partialTicks);
+    }
+
+    @Override
+    protected void mouseClicked(int mouseX, int mouseY, int mouseButton) throws IOException {
+        if (mouseY >= windowY && mouseY <= windowY + titleBarHeight && mouseX >= windowX && mouseX <= windowX + windowWidth) {
+            dragging = true;
+            dragOffsetX = mouseX - windowX;
+            dragOffsetY = mouseY - windowY;
+            return;
+        }
+
+        int tx = windowX + 5;
+        int ty = windowY + titleBarHeight + 5;
+        for (int i = 0; i < tabs.size(); i++) {
+            if (mouseX >= tx && mouseX <= tx + tabWidth && mouseY >= ty && mouseY <= ty + tabHeight) {
+                selectedTab = i;
+                return;
+            }
+            ty += tabHeight + 2;
+        }
+
+        Tab current = tabs.get(selectedTab);
+        if ("Settings".equals(current.name)) {
+            int margin = 20;
+            int bx = windowX + margin;
+            int bw = windowWidth - 2 * margin;
+            int bh = 20;
+            int by = windowY + titleBarHeight + 40;
+
+            if (mouseX >= bx && mouseX <= bx + bw && mouseY >= by && mouseY <= by + bh) {
+                currentLanguage = currentLanguage.equals("en") ? "ru" : "en";
+                return;
+            }
+        }
+
+        if (!"Settings".equals(current.name)) {
+            ty = windowY + titleBarHeight + 5;
+            int mx = windowX + 80;
             for (Module mod : current.modules) {
-                if (mouseX >= x && mouseX <= x + 100 &&
-                        mouseY >= y && mouseY <= y + 15) {
+                if (mouseX >= mx && mouseX <= mx + 120 && mouseY >= ty && mouseY <= ty + 20) {
                     mod.onClick();
                     return;
                 }
-                y += 18;
+                ty += 22;
             }
         }
+
+        super.mouseClicked(mouseX, mouseY, mouseButton);
+    }
+
+    @Override
+    protected void mouseReleased(int mouseX, int mouseY, int state) {
+        dragging = false;
+        super.mouseReleased(mouseX, mouseY, state);
+    }
+
+    private void savePosition() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("x", windowX);
+        obj.addProperty("y", windowY);
+        try (Writer w = new OutputStreamWriter(new FileOutputStream(CONFIG_FILE), StandardCharsets.UTF_8)) {
+            new Gson().toJson(obj, w);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean loadPosition() {
+        if (!CONFIG_FILE.exists()) return false;
+        try (Reader r = new InputStreamReader(new FileInputStream(CONFIG_FILE), StandardCharsets.UTF_8)) {
+            JsonObject obj = new Gson().fromJson(r, JsonObject.class);
+            if (obj.has("x") && obj.has("y")) {
+                windowX = obj.get("x").getAsInt();
+                windowY = obj.get("y").getAsInt();
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public static class Tab {
@@ -163,11 +236,13 @@ public class GuiClickMenu extends GuiScreen {
             else activate();
         }
 
-        public void toggle() {
+        private void toggle() {
             enabled = !enabled;
+            if ("light".equals(name))
+                Minecraft.getMinecraft().player.sendChatMessage(enabled ? "1" : "2");
         }
 
-        public void activate() {
+        private void activate() {
             Minecraft.getMinecraft().player.sendChatMessage("Activated " + name);
         }
     }
