@@ -15,6 +15,11 @@ import java.util.Map;
 
 @SideOnly(Side.CLIENT)
 public class variables {
+    private static Map<String, String> modsList = new HashMap<>();
+    {
+        modsList.put("blizzard", "nazzy.ob.ObVariables$MapVariables");
+        modsList.put("lab", "nazzy.lab.LabVariables$MapVariables");
+    }
 
     public static NBTTagCompound getMapVariables(String key){
         try {
@@ -33,22 +38,28 @@ public class variables {
         }
     }
 
-    public static Map<String, Object> getClassVariables(){
+    public static Map<String, Object> getClassVariables(String modName){
         try {
-            Class<?> clazz = Class.forName("nazzy.ob.ObVariables$MapVariables");
-            Method getMethod = clazz.getDeclaredMethod("get", World.class);
-            Object instance = getMethod.invoke(null, Minecraft.getMinecraft().world);
-            Field[] fields = clazz.getDeclaredFields();
-            Map<String, Object> arr = new HashMap<>();
-            for(Field field : fields){
-                field.setAccessible(true);
-                Object data = field.get(instance);
-                arr.put(field.getName(), data);
+            if(modsList.containsKey(modName.toLowerCase())) {
+                Class<?> clazz = Class.forName(modsList.get(modName.toLowerCase()));
+                Method getMethod = clazz.getDeclaredMethod("get", World.class);
+                Object instance = getMethod.invoke(null, Minecraft.getMinecraft().world);
+                Field[] fields = clazz.getDeclaredFields();
+                Map<String, Object> arr = new HashMap<>();
+                for (Field field : fields) {
+                    field.setAccessible(true);
+                    Object data = field.get(instance);
+                    arr.put(field.getName(), data);
+                }
+                return arr;
             }
-            return arr;
+            else {
+                throw new RuntimeException("There is an mistake in modName, check if it is valid");
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
     }
 
 }
