@@ -9,7 +9,7 @@ public class KeyHandler {
     @SubscribeEvent
     public void onKey(InputEvent.KeyInputEvent event) {
         if (Keyboard.getEventKey() == Keyboard.KEY_RSHIFT && Keyboard.getEventKeyState()) {
-            Minecraft.getMinecraft().displayGuiScreen(new GuiClickMenu());
+            Minecraft.getMinecraft().displayGuiScreen(new   GuiImpactClick());
         }
     }
 }

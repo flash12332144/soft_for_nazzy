@@ -1,65 +1,86 @@
 package com.flash.tlauncher.map;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
-import net.minecraft.world.storage.MapStorage;
-import net.minecraft.world.storage.WorldSavedData;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-@SideOnly(Side.CLIENT)
 public class variables {
-    private static Map<String, String> modsList = new HashMap<>();
-    {
+
+    private static final Map<String, String> modsList = new HashMap<>();
+
+    static {
         modsList.put("blizzard", "nazzy.ob.ObVariables$MapVariables");
         modsList.put("lab", "nazzy.lab.LabVariables$MapVariables");
+        // добавь свои, если нужно
     }
 
-    public static NBTTagCompound getMapVariables(String key){
-        try {
-            Class<?> clazz = Class.forName("nazzy.ob.ObVariables$MapVariables");
-            World world = Minecraft.getMinecraft().world;
-            MapStorage ms = world.getMapStorage();
-
-            WorldSavedData idk = ms.getOrLoadData((Class<? extends WorldSavedData>) clazz, key);
-
-            if (idk != null) {
-                return idk.serializeNBT();
-            }
-            throw new NullPointerException("world data for this key is null");
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    /** Проверка наличия мода */
+    public static boolean hasMod(String modName) {
+        return modsList.containsKey(modName.toLowerCase());
     }
 
-    public static Map<String, Object> getClassVariables(String modName){
+    /** Список зарегистрированных модов */
+    public static Set<String> getAvailableMods() {
+        return modsList.keySet();
+    }
+
+    /** Получение всех переменных у мода */
+    public static Map<String, Object> getClassVariables(String modName) {
+        Map<String, Object> arr = new LinkedHashMap<>();
+
         try {
-            if(modsList.containsKey(modName.toLowerCase())) {
-                Class<?> clazz = Class.forName(modsList.get(modName.toLowerCase()));
-                Method getMethod = clazz.getDeclaredMethod("get", World.class);
-                Object instance = getMethod.invoke(null, Minecraft.getMinecraft().world);
-                Field[] fields = clazz.getDeclaredFields();
-                Map<String, Object> arr = new HashMap<>();
-                for (Field field : fields) {
-                    field.setAccessible(true);
-                    Object data = field.get(instance);
-                    arr.put(field.getName(), data);
-                }
-                return arr;
+            String className = modsList.get(modName.toLowerCase());
+            if (className == null) return arr;
+
+            Class<?> clazz = Class.forName(className);
+            Method getMethod = clazz.getDeclaredMethod("get", World.class);
+            Object instance = getMethod.invoke(null, Minecraft.getMinecraft().world);
+
+            for (Field field : clazz.getDeclaredFields()) {
+                field.setAccessible(true);
+                Object value = field.get(instance);
+                arr.put(field.getName(), value);
             }
-            else {
-                throw new RuntimeException("There is an mistake in modName, check if it is valid");
-            }
+
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            System.err.println("[variables] Ошибка при получении переменных " + modName + ": " + e.getMessage());
+            e.printStackTrace();
         }
 
+        return arr;
+    }
+
+    public static Object getMapVariableValue(String modName, String key) {
+        try {
+            // Проверяем, что мод зарегистрирован
+            String className = modsList.get(modName.toLowerCase());
+            if (className == null) {
+                System.err.println("[variables] Мод " + modName + " не найден в списке modsList!");
+                return null;
+            }
+
+            // Получаем класс и экземпляр MapVariables
+            Class<?> clazz = Class.forName(className);
+            Method getMethod = clazz.getDeclaredMethod("get", World.class);
+            Object instance = getMethod.invoke(null, Minecraft.getMinecraft().world);
+
+            // Пытаемся найти поле с таким именем
+            Field field = clazz.getDeclaredField(key);
+            field.setAccessible(true);
+
+            Object value = field.get(instance);
+            return value;
+
+        } catch (NoSuchFieldException e) {
+            System.err.println("[variables] Переменная '" + key + "' не найдена в " + modName + "!");
+        } catch (Exception e) {
+            System.err.println("[variables] Ошибка при получении " + key + " из " + modName + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
 }
