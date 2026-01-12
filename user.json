@@ -1,1 +1,6 @@
-
+{
+  "allowed_hwids": [
+    "BASE64_HASH_1",
+    "BASE64_HASH_2"
+  ]
+}
